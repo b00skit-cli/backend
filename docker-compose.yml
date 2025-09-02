@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   postgres:
     image: postgres:15-alpine
@@ -12,7 +14,7 @@ services:
       - POSTGRES_PASSWORD=${PG_PASSWORD}
       - POSTGRES_DB=${PG_DB}
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - /home/booskit/web/flix.booskit.dev/private/p-stream-data:/var/lib/postgresql/data
     env_file:
       - stack.env
     networks:
@@ -35,7 +37,7 @@ services:
     env_file:
       - stack.env
     ports:
-      - '5030:3000'
+      - "5030:3000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -45,6 +47,3 @@ services:
 networks:
   p-stream-network:
     driver: bridge
-
-volumes:
-  postgres-data:

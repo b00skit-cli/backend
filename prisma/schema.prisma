@@ -68,6 +68,7 @@ model user_settings {
   proxy_urls                String[]
   trakt_key                 String?  @db.VarChar(255)
   febbox_key                String?  @db.VarChar(255)
+  real_debrid_key           String?  @db.VarChar(255)
   enable_thumbnails         Boolean  @default(false)
   enable_autoplay           Boolean  @default(true)
   enable_skip_credits       Boolean  @default(true)
@@ -76,9 +77,20 @@ model user_settings {
   enable_details_modal      Boolean  @default(false)
   enable_image_logos        Boolean  @default(true)
   enable_carousel_view      Boolean  @default(false)
+  force_compact_episode_view Boolean @default(false)
   source_order              String[] @default([])
   enable_source_order       Boolean  @default(false)
+  disabled_sources          String[] @default([])
+  embed_order               String[] @default([])
+  enable_embed_order        Boolean  @default(false)
+  disabled_embeds           String[] @default([])
   proxy_tmdb                Boolean  @default(false)
+  enable_low_performance_mode Boolean @default(false)
+  enable_native_subtitles   Boolean  @default(false)
+  enable_hold_to_boost      Boolean  @default(false)
+  home_section_order        String[] @default([])
+  manual_source_selection   Boolean  @default(false)
+  enable_double_click_to_seek Boolean @default(false)
 }
 
 model users {

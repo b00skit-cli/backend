@@ -1,15 +1,7 @@
 import { useAuth } from '~/utils/auth';
 import { z } from 'zod';
 import { scopedLogger } from '~/utils/logger';
-
-interface BookmarkWithFavorites {
-  tmdb_id: string;
-  user_id: string;
-  meta: any;
-  group: string[];
-  favorite_episodes: string[];
-  updated_at: Date;
-}
+import { bookmarks } from '@prisma/client';
 
 const log = scopedLogger('user-bookmarks');
 
@@ -87,7 +79,7 @@ export default defineEventHandler(async event => {
           favorite_episodes: normalizedFavoriteEpisodes,
           updated_at: new Date(),
         } as any,
-      }) as BookmarkWithFavorites;
+      }) as bookmarks;
 
       log.info('Bookmark created successfully', { userId, tmdbId });
 

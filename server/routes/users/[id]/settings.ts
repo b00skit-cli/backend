@@ -1,41 +1,9 @@
 import { useAuth } from '~/utils/auth';
 import { z } from 'zod';
 import { scopedLogger } from '~/utils/logger';
+import { user_settings } from '@prisma/client';
 
 const log = scopedLogger('user-settings');
-
-interface UserSettings {
-  id: string;
-  application_theme: string | null;
-  application_language: string;
-  default_subtitle_language: string | null;
-  proxy_urls: string[];
-  trakt_key: string | null;
-  febbox_key: string | null;
-  real_debrid_key: string | null;
-  enable_thumbnails: boolean;
-  enable_autoplay: boolean;
-  enable_skip_credits: boolean;
-  enable_discover: boolean;
-  enable_featured: boolean;
-  enable_details_modal: boolean;
-  enable_image_logos: boolean;
-  enable_carousel_view: boolean;
-  force_compact_episode_view: boolean;
-  source_order: string[];
-  enable_source_order: boolean;
-  disabled_sources: string[];
-  embed_order: string[];
-  enable_embed_order: boolean;
-  disabled_embeds: string[];
-  proxy_tmdb: boolean;
-  enable_low_performance_mode: boolean;
-  enable_native_subtitles: boolean;
-  enable_hold_to_boost: boolean;
-  home_section_order: string[];
-  manual_source_selection: boolean;
-  enable_double_click_to_seek: boolean;
-}
 
 const userSettingsSchema = z.object({
   applicationTheme: z.string().nullable().optional(),
@@ -97,7 +65,7 @@ export default defineEventHandler(async event => {
     try {
       const settings = await prisma.user_settings.findUnique({
         where: { id: userId },
-      }) as unknown as UserSettings | null;
+      }) as unknown as user_settings | null;
 
       return {
         id: userId,
@@ -222,7 +190,7 @@ export default defineEventHandler(async event => {
           id: userId,
           ...createData,
         },
-      }) as unknown as UserSettings;
+      }) as unknown as user_settings;
 
       log.info('Settings updated successfully', { userId });
 

@@ -130,6 +130,92 @@ export default defineEventHandler(async event => {
     }));
   }
 
+  if (method === 'DELETE' && event.path.endsWith('/progress/cleanup')) {
+    // Clean up unwanted progress items (unwatched or finished)
+    const allItems = await prisma.progress_items.findMany({
+      where: { user_id: userId },
+    });
+
+    const itemsToDelete: string[] = [];
+
+    // Group items by tmdbId for show processing
+    const itemsByTmdbId: Record<string, any[]> = {};
+    for (const item of allItems) {
+      if (!itemsByTmdbId[item.tmdb_id]) {
+        itemsByTmdbId[item.tmdb_id] = [];
+      }
+      itemsByTmdbId[item.tmdb_id].push(item);
+    }
+
+    for (const [tmdbId, items] of Object.entries(itemsByTmdbId)) {
+      const movieItems = items.filter(item => !item.episode_id);
+      const episodeItems = items.filter(item => item.episode_id);
+
+      // Process movies
+      for (const item of movieItems) {
+        const duration = Number(item.duration);
+        const watched = Number(item.watched);
+        const isNotStarted = progressIsNotStarted(duration, watched);
+        const isCompleted = progressIsCompleted(duration, watched);
+
+        if (isNotStarted || isCompleted) {
+          itemsToDelete.push(item.id);
+        }
+      }
+
+      // Process episodes - group by season
+      const episodesBySeason: Record<string, any[]> = {};
+      for (const item of episodeItems) {
+        const seasonKey = `${item.season_id}`;
+        if (!episodesBySeason[seasonKey]) {
+          episodesBySeason[seasonKey] = [];
+        }
+        episodesBySeason[seasonKey].push(item);
+      }
+
+      for (const seasonItems of Object.values(episodesBySeason)) {
+        // Check if season has any acceptable episodes
+        const hasAcceptableEpisodes = seasonItems.some((item: any) => {
+          const duration = Number(item.duration);
+          const watched = Number(item.watched);
+          return !progressIsNotStarted(duration, watched) &&
+                 !progressIsCompleted(duration, watched);
+        });
+
+        if (hasAcceptableEpisodes) {
+          // If season has acceptable episodes, only delete unacceptable ones
+          for (const item of seasonItems) {
+            const duration = Number(item.duration);
+            const watched = Number(item.watched);
+            const isNotStarted = progressIsNotStarted(duration, watched);
+            const isCompleted = progressIsCompleted(duration, watched);
+
+            if (isNotStarted || isCompleted) {
+              itemsToDelete.push(item.id);
+            }
+          }
+        } else {
+          // If no acceptable episodes in season, delete all
+          itemsToDelete.push(...seasonItems.map((item: any) => item.id));
+        }
+      }
+    }
+
+    if (itemsToDelete.length > 0) {
+      await prisma.progress_items.deleteMany({
+        where: {
+          id: { in: itemsToDelete },
+          user_id: userId,
+        },
+      });
+    }
+
+    return {
+      deletedCount: itemsToDelete.length,
+      message: `Cleaned up ${itemsToDelete.length} unwanted progress items`,
+    };
+  }
+
   if (event.path.includes('/progress/') && !event.path.endsWith('/import')) {
     const segments = event.path.split('/');
     const tmdbId = segments[segments.length - 1];

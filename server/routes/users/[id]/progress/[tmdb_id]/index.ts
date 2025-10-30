@@ -65,7 +65,7 @@ export default defineEventHandler(async (event) => {
     } catch (error) {
       throw createError({ statusCode: 400, message: error.message });
     }
-    const { meta, tmdbId: duration, watched, seasonId, episodeId, seasonNumber, episodeNumber, updatedAt } = parsedBody;
+    const { meta, tmdbId, duration, watched, seasonId, episodeId, seasonNumber, episodeNumber, updatedAt } = parsedBody;
 
     const now = coerceDateTime(updatedAt);
     const { seasonId: normSeasonId, episodeId: normEpisodeId } = normalizeIds(meta.type, seasonId, episodeId);

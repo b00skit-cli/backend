@@ -2,6 +2,64 @@ import { useAuth } from '~/utils/auth';
 import { z } from 'zod';
 import { randomUUID } from 'crypto';
 
+function progressIsNotStarted(duration: number, watched: number): boolean {
+  // too short watch time
+  if (watched < 20) return true;
+  return false;
+}
+
+function progressIsCompleted(duration: number, watched: number): boolean {
+  const timeFromEnd = duration - watched;
+  // too close to the end, is completed
+  if (timeFromEnd < 60 * 2) return true;
+  return false;
+}
+
+async function shouldSaveProgress(
+  userId: string,
+  tmdbId: string,
+  validatedBody: any,
+  prisma: any
+): Promise<boolean> {
+  const duration = parseInt(validatedBody.duration);
+  const watched = parseInt(validatedBody.watched);
+
+  // Check if progress is acceptable
+  const isNotStarted = progressIsNotStarted(duration, watched);
+  const isCompleted = progressIsCompleted(duration, watched);
+  const isAcceptable = !isNotStarted && !isCompleted;
+
+  // For movies, only save if acceptable
+  if (validatedBody.meta.type === 'movie') {
+    return isAcceptable;
+  }
+
+  // For shows, save if acceptable OR if season has other watched episodes
+  if (isAcceptable) return true;
+
+  // Check if this season has other episodes with progress
+  if (!validatedBody.seasonId) return false;
+
+  const seasonEpisodes = await prisma.progress_items.findMany({
+    where: {
+      user_id: userId,
+      tmdb_id: tmdbId,
+      season_id: validatedBody.seasonId,
+      episode_id: {
+        not: validatedBody.episodeId || null
+      }
+    }
+  });
+
+  // Check if any other episode in this season has acceptable progress
+  return seasonEpisodes.some((episode: any) => {
+    const epDuration = Number(episode.duration);
+    const epWatched = Number(episode.watched);
+    return !progressIsNotStarted(epDuration, epWatched) &&
+           !progressIsCompleted(epDuration, epWatched);
+  });
+}
+
 const progressMetaSchema = z.object({
   title: z.string(),
   year: z.number().optional(),
@@ -79,6 +137,25 @@ export default defineEventHandler(async event => {
     if (method === 'PUT') {
       const body = await readBody(event);
       const validatedBody = progressItemSchema.parse(body);
+
+      // Check if this progress should be saved
+      const shouldSave = await shouldSaveProgress(userId, tmdbId, validatedBody, prisma);
+      if (!shouldSave) {
+        // Return early without saving
+        return {
+          id: '',
+          tmdbId,
+          userId,
+          seasonId: validatedBody.seasonId,
+          episodeId: validatedBody.episodeId,
+          seasonNumber: validatedBody.seasonNumber,
+          episodeNumber: validatedBody.episodeNumber,
+          meta: validatedBody.meta,
+          duration: parseInt(validatedBody.duration),
+          watched: parseInt(validatedBody.watched),
+          updatedAt: defaultAndCoerceDateTime(validatedBody.updatedAt),
+        };
+      }
 
       const now = defaultAndCoerceDateTime(validatedBody.updatedAt);
 

@@ -216,7 +216,7 @@ export default defineEventHandler(async event => {
     };
   }
 
-  if (event.path.includes('/progress/') && !event.path.endsWith('/import')) {
+  if (event.path.includes('/progress/') && !event.path.endsWith('/import') && !event.path.endsWith('/cleanup')) {
     const segments = event.path.split('/');
     const tmdbId = segments[segments.length - 1];
 

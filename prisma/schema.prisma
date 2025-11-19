@@ -68,7 +68,8 @@ model user_settings {
   proxy_urls                String[]
   trakt_key                 String?  @db.VarChar(255)
   febbox_key                String?  @db.VarChar(255)
-  real_debrid_key           String?  @db.VarChar(255)
+  debrid_token              String?  @db.VarChar(255)
+  debrid_service            String?  @db.VarChar(255)
   enable_thumbnails         Boolean  @default(false)
   enable_autoplay           Boolean  @default(true)
   enable_skip_credits       Boolean  @default(true)

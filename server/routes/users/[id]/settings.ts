@@ -12,7 +12,8 @@ const userSettingsSchema = z.object({
   proxyUrls: z.array(z.string()).nullable().optional(),
   traktKey: z.string().nullable().optional(),
   febboxKey: z.string().nullable().optional(),
-  realDebridKey: z.string().nullable().optional(),
+  debridToken: z.string().nullable().optional(),
+  debridService: z.string().nullable().optional(),
   enableThumbnails: z.boolean().optional().default(false),
   enableAutoplay: z.boolean().optional().default(true),
   enableSkipCredits: z.boolean().optional().default(true),
@@ -75,7 +76,8 @@ export default defineEventHandler(async event => {
         proxyUrls: settings?.proxy_urls.length === 0 ? null : settings?.proxy_urls || null,
         traktKey: settings?.trakt_key || null,
         febboxKey: settings?.febbox_key || null,
-        realDebridKey: settings?.real_debrid_key || null,
+        debridToken: settings?.debrid_token || null,
+        debridService: settings?.debrid_service || null,
         enableThumbnails: settings?.enable_thumbnails ?? false,
         enableAutoplay: settings?.enable_autoplay ?? true,
         enableSkipCredits: settings?.enable_skip_credits ?? true,
@@ -125,7 +127,8 @@ export default defineEventHandler(async event => {
         proxy_urls: validatedBody.proxyUrls === null ? [] : (validatedBody.proxyUrls || []),
         trakt_key: validatedBody.traktKey ?? null,
         febbox_key: validatedBody.febboxKey ?? null,
-        real_debrid_key: validatedBody.realDebridKey ?? null,
+        debrid_token: validatedBody.debridToken ?? null,
+        debrid_service: validatedBody.debridService ?? null,
         enable_thumbnails: validatedBody.enableThumbnails,
         enable_autoplay: validatedBody.enableAutoplay,
         enable_skip_credits: validatedBody.enableSkipCredits,
@@ -157,7 +160,8 @@ export default defineEventHandler(async event => {
       if (Object.prototype.hasOwnProperty.call(body, 'proxyUrls')) updateData.proxy_urls = createData.proxy_urls;
       if (Object.prototype.hasOwnProperty.call(body, 'traktKey')) updateData.trakt_key = createData.trakt_key;
       if (Object.prototype.hasOwnProperty.call(body, 'febboxKey')) updateData.febbox_key = createData.febbox_key;
-      if (Object.prototype.hasOwnProperty.call(body, 'realDebridKey')) updateData.real_debrid_key = createData.real_debrid_key;
+      if (Object.prototype.hasOwnProperty.call(body, 'debridToken')) updateData.debrid_token = createData.debrid_token;
+      if (Object.prototype.hasOwnProperty.call(body, 'debridService')) updateData.debrid_service = createData.debrid_service;
       if (Object.prototype.hasOwnProperty.call(body, 'enableThumbnails')) updateData.enable_thumbnails = createData.enable_thumbnails;
       if (Object.prototype.hasOwnProperty.call(body, 'enableAutoplay')) updateData.enable_autoplay = createData.enable_autoplay;
       if (Object.prototype.hasOwnProperty.call(body, 'enableSkipCredits')) updateData.enable_skip_credits = createData.enable_skip_credits;
@@ -202,7 +206,8 @@ export default defineEventHandler(async event => {
         proxyUrls: settings.proxy_urls.length === 0 ? null : settings.proxy_urls,
         traktKey: settings.trakt_key,
         febboxKey: settings.febbox_key,
-        realDebridKey: settings.real_debrid_key,
+        debridToken: settings.debrid_token,
+        debridService: settings.debrid_service,
         enableThumbnails: settings.enable_thumbnails,
         enableAutoplay: settings.enable_autoplay,
         enableSkipCredits: settings.enable_skip_credits,

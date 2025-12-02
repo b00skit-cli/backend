@@ -92,6 +92,7 @@ model user_settings {
   home_section_order        String[] @default([])
   manual_source_selection   Boolean  @default(false)
   enable_double_click_to_seek Boolean @default(false)
+  enable_auto_resume_on_playback_error Boolean @default(false)
 }
 
 model users {

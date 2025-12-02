@@ -1,7 +1,7 @@
 import { useAuth } from '~/utils/auth';
 import { z } from 'zod';
 import { scopedLogger } from '~/utils/logger';
-import type { user_settings } from '@prisma/client';
+import type { user_settings } from '~/../generated/client';
 import { prisma } from '~/utils/prisma';
 
 const log = scopedLogger('user-settings');
@@ -37,6 +37,7 @@ const userSettingsSchema = z.object({
   homeSectionOrder: z.array(z.string()).optional().default([]),
   manualSourceSelection: z.boolean().optional().default(false),
   enableDoubleClickToSeek: z.boolean().optional().default(false),
+  enableAutoResumeOnPlaybackError: z.boolean().optional().default(false),
 });
 
 export default defineEventHandler(async event => {
@@ -152,6 +153,7 @@ export default defineEventHandler(async event => {
         home_section_order: validatedBody.homeSectionOrder || [],
         manual_source_selection: validatedBody.manualSourceSelection,
         enable_double_click_to_seek: validatedBody.enableDoubleClickToSeek,
+        enable_auto_resume_on_playback_error: false,
       };
 
       const updateData: Partial<typeof createData> = {};

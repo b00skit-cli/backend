@@ -139,3 +139,21 @@ model user_group_order {
 
   @@unique([user_id], map: "user_group_order_user_id_unique")
 }
+
+model watch_history {
+  id             String   @id @db.Uuid
+  user_id        String   @db.VarChar(255)
+  tmdb_id        String   @db.VarChar(255)
+  season_id      String?  @db.VarChar(255)
+  episode_id     String?  @db.VarChar(255)
+  meta           Json
+  duration       BigInt
+  watched        BigInt
+  watched_at     DateTime @db.Timestamptz(0)
+  completed      Boolean  @default(false)
+  season_number  Int?
+  episode_number Int?
+  updated_at     DateTime @default(now()) @updatedAt @db.Timestamptz(0)
+
+  @@unique([tmdb_id, user_id, season_id, episode_id], map: "watch_history_tmdb_id_user_id_season_id_episode_id_unique")
+}

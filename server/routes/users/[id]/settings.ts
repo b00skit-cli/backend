@@ -1,7 +1,8 @@
 import { useAuth } from '~/utils/auth';
 import { z } from 'zod';
 import { scopedLogger } from '~/utils/logger';
-import { user_settings } from '@prisma/client';
+import type { user_settings } from '~/../generated/client';
+import { prisma } from '~/utils/prisma';
 
 const log = scopedLogger('user-settings');
 
@@ -36,6 +37,7 @@ const userSettingsSchema = z.object({
   homeSectionOrder: z.array(z.string()).optional().default([]),
   manualSourceSelection: z.boolean().optional().default(false),
   enableDoubleClickToSeek: z.boolean().optional().default(false),
+  enableAutoResumeOnPlaybackError: z.boolean().optional().default(false),
 });
 
 export default defineEventHandler(async event => {
@@ -64,9 +66,9 @@ export default defineEventHandler(async event => {
 
   if (event.method === 'GET') {
     try {
-      const settings = await prisma.user_settings.findUnique({
+      const settings = (await prisma.user_settings.findUnique({
         where: { id: userId },
-      }) as unknown as user_settings | null;
+      })) as unknown as user_settings | null;
 
       return {
         id: userId,
@@ -124,7 +126,7 @@ export default defineEventHandler(async event => {
         application_theme: validatedBody.applicationTheme ?? null,
         application_language: validatedBody.applicationLanguage,
         default_subtitle_language: validatedBody.defaultSubtitleLanguage ?? null,
-        proxy_urls: validatedBody.proxyUrls === null ? [] : (validatedBody.proxyUrls || []),
+        proxy_urls: validatedBody.proxyUrls === null ? [] : validatedBody.proxyUrls || [],
         trakt_key: validatedBody.traktKey ?? null,
         febbox_key: validatedBody.febboxKey ?? null,
         debrid_token: validatedBody.debridToken ?? null,
@@ -151,50 +153,85 @@ export default defineEventHandler(async event => {
         home_section_order: validatedBody.homeSectionOrder || [],
         manual_source_selection: validatedBody.manualSourceSelection,
         enable_double_click_to_seek: validatedBody.enableDoubleClickToSeek,
+        enable_auto_resume_on_playback_error: false,
       };
 
       const updateData: Partial<typeof createData> = {};
-      if (Object.prototype.hasOwnProperty.call(body, 'applicationTheme')) updateData.application_theme = createData.application_theme;
-      if (Object.prototype.hasOwnProperty.call(body, 'applicationLanguage')) updateData.application_language = createData.application_language;
-      if (Object.prototype.hasOwnProperty.call(body, 'defaultSubtitleLanguage')) updateData.default_subtitle_language = createData.default_subtitle_language;
-      if (Object.prototype.hasOwnProperty.call(body, 'proxyUrls')) updateData.proxy_urls = createData.proxy_urls;
-      if (Object.prototype.hasOwnProperty.call(body, 'traktKey')) updateData.trakt_key = createData.trakt_key;
-      if (Object.prototype.hasOwnProperty.call(body, 'febboxKey')) updateData.febbox_key = createData.febbox_key;
-      if (Object.prototype.hasOwnProperty.call(body, 'debridToken')) updateData.debrid_token = createData.debrid_token;
-      if (Object.prototype.hasOwnProperty.call(body, 'debridService')) updateData.debrid_service = createData.debrid_service;
-      if (Object.prototype.hasOwnProperty.call(body, 'enableThumbnails')) updateData.enable_thumbnails = createData.enable_thumbnails;
-      if (Object.prototype.hasOwnProperty.call(body, 'enableAutoplay')) updateData.enable_autoplay = createData.enable_autoplay;
-      if (Object.prototype.hasOwnProperty.call(body, 'enableSkipCredits')) updateData.enable_skip_credits = createData.enable_skip_credits;
-      if (Object.prototype.hasOwnProperty.call(body, 'enableDiscover')) updateData.enable_discover = createData.enable_discover;
-      if (Object.prototype.hasOwnProperty.call(body, 'enableFeatured')) updateData.enable_featured = createData.enable_featured;
-      if (Object.prototype.hasOwnProperty.call(body, 'enableDetailsModal')) updateData.enable_details_modal = createData.enable_details_modal;
-      if (Object.prototype.hasOwnProperty.call(body, 'enableImageLogos')) updateData.enable_image_logos = createData.enable_image_logos;
-      if (Object.prototype.hasOwnProperty.call(body, 'enableCarouselView')) updateData.enable_carousel_view = createData.enable_carousel_view;
-      if (Object.prototype.hasOwnProperty.call(body, 'forceCompactEpisodeView')) updateData.force_compact_episode_view = createData.force_compact_episode_view;
-      if (Object.prototype.hasOwnProperty.call(body, 'sourceOrder')) updateData.source_order = createData.source_order;
-      if (Object.prototype.hasOwnProperty.call(body, 'enableSourceOrder')) updateData.enable_source_order = createData.enable_source_order;
-      if (Object.prototype.hasOwnProperty.call(body, 'disabledSources')) updateData.disabled_sources = createData.disabled_sources;
-      if (Object.prototype.hasOwnProperty.call(body, 'embedOrder')) updateData.embed_order = createData.embed_order;
-      if (Object.prototype.hasOwnProperty.call(body, 'enableEmbedOrder')) updateData.enable_embed_order = createData.enable_embed_order;
-      if (Object.prototype.hasOwnProperty.call(body, 'disabledEmbeds')) updateData.disabled_embeds = createData.disabled_embeds;
-      if (Object.prototype.hasOwnProperty.call(body, 'proxyTmdb')) updateData.proxy_tmdb = createData.proxy_tmdb;
-      if (Object.prototype.hasOwnProperty.call(body, 'enableLowPerformanceMode')) updateData.enable_low_performance_mode = createData.enable_low_performance_mode;
-      if (Object.prototype.hasOwnProperty.call(body, 'enableNativeSubtitles')) updateData.enable_native_subtitles = createData.enable_native_subtitles;
-      if (Object.prototype.hasOwnProperty.call(body, 'enableHoldToBoost')) updateData.enable_hold_to_boost = createData.enable_hold_to_boost;
-      if (Object.prototype.hasOwnProperty.call(body, 'homeSectionOrder')) updateData.home_section_order = createData.home_section_order;
-      if (Object.prototype.hasOwnProperty.call(body, 'manualSourceSelection')) updateData.manual_source_selection = createData.manual_source_selection;
-      if (Object.prototype.hasOwnProperty.call(body, 'enableDoubleClickToSeek')) updateData.enable_double_click_to_seek = createData.enable_double_click_to_seek;
+      if (Object.prototype.hasOwnProperty.call(body, 'applicationTheme'))
+        updateData.application_theme = createData.application_theme;
+      if (Object.prototype.hasOwnProperty.call(body, 'applicationLanguage'))
+        updateData.application_language = createData.application_language;
+      if (Object.prototype.hasOwnProperty.call(body, 'defaultSubtitleLanguage'))
+        updateData.default_subtitle_language = createData.default_subtitle_language;
+      if (Object.prototype.hasOwnProperty.call(body, 'proxyUrls'))
+        updateData.proxy_urls = createData.proxy_urls;
+      if (Object.prototype.hasOwnProperty.call(body, 'traktKey'))
+        updateData.trakt_key = createData.trakt_key;
+      if (Object.prototype.hasOwnProperty.call(body, 'febboxKey'))
+        updateData.febbox_key = createData.febbox_key;
+      if (Object.prototype.hasOwnProperty.call(body, 'debridToken'))
+        updateData.debrid_token = createData.debrid_token;
+      if (Object.prototype.hasOwnProperty.call(body, 'debridService'))
+        updateData.debrid_service = createData.debrid_service;
+      if (Object.prototype.hasOwnProperty.call(body, 'enableThumbnails'))
+        updateData.enable_thumbnails = createData.enable_thumbnails;
+      if (Object.prototype.hasOwnProperty.call(body, 'enableAutoplay'))
+        updateData.enable_autoplay = createData.enable_autoplay;
+      if (Object.prototype.hasOwnProperty.call(body, 'enableSkipCredits'))
+        updateData.enable_skip_credits = createData.enable_skip_credits;
+      if (Object.prototype.hasOwnProperty.call(body, 'enableDiscover'))
+        updateData.enable_discover = createData.enable_discover;
+      if (Object.prototype.hasOwnProperty.call(body, 'enableFeatured'))
+        updateData.enable_featured = createData.enable_featured;
+      if (Object.prototype.hasOwnProperty.call(body, 'enableDetailsModal'))
+        updateData.enable_details_modal = createData.enable_details_modal;
+      if (Object.prototype.hasOwnProperty.call(body, 'enableImageLogos'))
+        updateData.enable_image_logos = createData.enable_image_logos;
+      if (Object.prototype.hasOwnProperty.call(body, 'enableCarouselView'))
+        updateData.enable_carousel_view = createData.enable_carousel_view;
+      if (Object.prototype.hasOwnProperty.call(body, 'forceCompactEpisodeView'))
+        updateData.force_compact_episode_view = createData.force_compact_episode_view;
+      if (Object.prototype.hasOwnProperty.call(body, 'sourceOrder'))
+        updateData.source_order = createData.source_order;
+      if (Object.prototype.hasOwnProperty.call(body, 'enableSourceOrder'))
+        updateData.enable_source_order = createData.enable_source_order;
+      if (Object.prototype.hasOwnProperty.call(body, 'disabledSources'))
+        updateData.disabled_sources = createData.disabled_sources;
+      if (Object.prototype.hasOwnProperty.call(body, 'embedOrder'))
+        updateData.embed_order = createData.embed_order;
+      if (Object.prototype.hasOwnProperty.call(body, 'enableEmbedOrder'))
+        updateData.enable_embed_order = createData.enable_embed_order;
+      if (Object.prototype.hasOwnProperty.call(body, 'disabledEmbeds'))
+        updateData.disabled_embeds = createData.disabled_embeds;
+      if (Object.prototype.hasOwnProperty.call(body, 'proxyTmdb'))
+        updateData.proxy_tmdb = createData.proxy_tmdb;
+      if (Object.prototype.hasOwnProperty.call(body, 'enableLowPerformanceMode'))
+        updateData.enable_low_performance_mode = createData.enable_low_performance_mode;
+      if (Object.prototype.hasOwnProperty.call(body, 'enableNativeSubtitles'))
+        updateData.enable_native_subtitles = createData.enable_native_subtitles;
+      if (Object.prototype.hasOwnProperty.call(body, 'enableHoldToBoost'))
+        updateData.enable_hold_to_boost = createData.enable_hold_to_boost;
+      if (Object.prototype.hasOwnProperty.call(body, 'homeSectionOrder'))
+        updateData.home_section_order = createData.home_section_order;
+      if (Object.prototype.hasOwnProperty.call(body, 'manualSourceSelection'))
+        updateData.manual_source_selection = createData.manual_source_selection;
+      if (Object.prototype.hasOwnProperty.call(body, 'enableDoubleClickToSeek'))
+        updateData.enable_double_click_to_seek = createData.enable_double_click_to_seek;
 
-      log.info('Preparing to upsert settings', { userId, updateData, createData: { id: userId, ...createData } });
+      log.info('Preparing to upsert settings', {
+        userId,
+        updateData,
+        createData: { id: userId, ...createData },
+      });
 
-      const settings = await prisma.user_settings.upsert({
+      const settings = (await prisma.user_settings.upsert({
         where: { id: userId },
         update: updateData,
         create: {
           id: userId,
           ...createData,
         },
-      }) as unknown as user_settings;
+      })) as unknown as user_settings;
 
       log.info('Settings updated successfully', { userId });
 

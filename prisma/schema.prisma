@@ -1,6 +1,6 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../generated"
+  provider     = "prisma-client"
+  output       = "../generated"
   moduleFormat = "esm"
 }
 
@@ -9,11 +9,11 @@ datasource db {
 }
 
 model bookmarks {
-  tmdb_id          String   @db.VarChar(255)
-  user_id          String   @db.VarChar(255)
-  meta             Json
-  updated_at       DateTime @db.Timestamptz(0)
-  group            String[]
+  tmdb_id           String   @db.VarChar(255)
+  user_id           String   @db.VarChar(255)
+  meta              Json
+  updated_at        DateTime @db.Timestamptz(0)
+  group             String[]
   favorite_episodes String[] @default([])
 
   @@id([tmdb_id, user_id])
@@ -61,50 +61,50 @@ model sessions {
 }
 
 model user_settings {
-  id                        String   @id
-  application_theme         String?  @db.VarChar(255)
-  application_language      String?  @db.VarChar(255)
-  default_subtitle_language String?  @db.VarChar(255)
-  proxy_urls                String[]
-  trakt_key                 String?  @db.VarChar(255)
-  febbox_key                String?  @db.VarChar(255)
-  debrid_token              String?  @db.VarChar(255)
-  debrid_service            String?  @db.VarChar(255)
-  enable_thumbnails         Boolean  @default(false)
-  enable_autoplay           Boolean  @default(true)
-  enable_skip_credits       Boolean  @default(true)
-  enable_discover           Boolean  @default(true)
-  enable_featured           Boolean  @default(false)
-  enable_details_modal      Boolean  @default(false)
-  enable_image_logos        Boolean  @default(true)
-  enable_carousel_view      Boolean  @default(false)
-  force_compact_episode_view Boolean @default(false)
-  source_order              String[] @default([])
-  enable_source_order       Boolean  @default(false)
-  disabled_sources          String[] @default([])
-  embed_order               String[] @default([])
-  enable_embed_order        Boolean  @default(false)
-  disabled_embeds           String[] @default([])
-  proxy_tmdb                Boolean  @default(false)
-  enable_low_performance_mode Boolean @default(false)
-  enable_native_subtitles   Boolean  @default(false)
-  enable_hold_to_boost      Boolean  @default(false)
-  home_section_order        String[] @default([])
-  manual_source_selection   Boolean  @default(false)
-  enable_double_click_to_seek Boolean @default(false)
-  enable_auto_resume_on_playback_error Boolean @default(false)
+  id                                   String   @id
+  application_theme                    String?  @db.VarChar(255)
+  application_language                 String?  @db.VarChar(255)
+  default_subtitle_language            String?  @db.VarChar(255)
+  proxy_urls                           String[]
+  trakt_key                            String?  @db.VarChar(255)
+  febbox_key                           String?  @db.VarChar(255)
+  enable_autoplay                      Boolean  @default(true)
+  enable_carousel_view                 Boolean  @default(false)
+  enable_details_modal                 Boolean  @default(false)
+  enable_discover                      Boolean  @default(true)
+  enable_featured                      Boolean  @default(false)
+  enable_image_logos                   Boolean  @default(true)
+  enable_skip_credits                  Boolean  @default(true)
+  enable_source_order                  Boolean  @default(false)
+  enable_thumbnails                    Boolean  @default(false)
+  proxy_tmdb                           Boolean  @default(false)
+  source_order                         String[] @default([])
+  disabled_embeds                      String[] @default([])
+  disabled_sources                     String[] @default([])
+  embed_order                          String[] @default([])
+  enable_double_click_to_seek          Boolean  @default(false)
+  enable_embed_order                   Boolean  @default(false)
+  enable_hold_to_boost                 Boolean  @default(false)
+  enable_low_performance_mode          Boolean  @default(false)
+  enable_native_subtitles              Boolean  @default(false)
+  force_compact_episode_view           Boolean  @default(false)
+  home_section_order                   String[] @default([])
+  manual_source_selection              Boolean  @default(false)
+  debrid_service                       String?  @db.VarChar(255)
+  debrid_token                         String?  @db.VarChar(255)
+  enable_auto_resume_on_playback_error Boolean  @default(false)
 }
 
 model users {
   id             String    @id
   public_key     String    @unique(map: "users_public_key_unique")
   namespace      String    @db.VarChar(255)
-  nickname       String    @db.VarChar(255)
   created_at     DateTime  @db.Timestamptz(0)
   last_logged_in DateTime? @db.Timestamptz(0)
   permissions    String[]
   profile        Json
   ratings        Json      @default("[]")
+  nickname       String    @db.VarChar(255)
 }
 
 model lists {
@@ -132,13 +132,11 @@ model list_items {
 }
 
 model user_group_order {
-  id        String   @id @default(uuid()) @db.Uuid
-  user_id   String   @db.VarChar(255)
+  id          String   @id @default(uuid()) @db.Uuid
+  user_id     String   @unique(map: "user_group_order_user_id_unique") @db.VarChar(255)
   group_order String[] @default([])
-  created_at DateTime @default(now()) @db.Timestamptz(0)
-  updated_at DateTime @default(now()) @db.Timestamptz(0)
-
-  @@unique([user_id], map: "user_group_order_user_id_unique")
+  created_at  DateTime @default(now()) @db.Timestamptz(0)
+  updated_at  DateTime @default(now()) @db.Timestamptz(0)
 }
 
 model watch_history {

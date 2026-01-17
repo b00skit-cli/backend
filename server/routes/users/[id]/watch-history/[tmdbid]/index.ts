@@ -52,75 +52,106 @@ export default defineEventHandler(async event => {
   }
 
   if (method === 'PUT') {
-    const body = await readBody(event);
-    const validatedBody = watchHistoryItemSchema.parse(body);
+    try {
+      const body = await readBody(event);
+      console.error('Watch history PUT body:', JSON.stringify(body, null, 2));
 
-    const watchedAt = defaultAndCoerceDateTime(validatedBody.watchedAt);
-    const now = new Date();
+      let validatedBody;
+      try {
+        validatedBody = watchHistoryItemSchema.parse(body);
+        console.error('Validation successful');
+      } catch (validationError) {
+        console.error('Validation error:', validationError);
+        throw createError({
+          statusCode: 400,
+          message: `Validation error: ${validationError.message}`,
+        });
+      }
 
-    const existingItem = await prisma.watch_history.findUnique({
-      where: {
-        tmdb_id_user_id_season_id_episode_id: {
-          tmdb_id: tmdbId,
-          user_id: userId,
-          season_id: validatedBody.seasonId || null,
-          episode_id: validatedBody.episodeId || null,
-        },
-      },
-    });
+      const watchedAt = defaultAndCoerceDateTime(validatedBody.watchedAt);
+      const now = new Date();
 
-    let watchHistoryItem;
-
-    if (existingItem) {
-      watchHistoryItem = await prisma.watch_history.update({
+      const existingItem = await prisma.watch_history.findUnique({
         where: {
-          id: existingItem.id,
-        },
-        data: {
-          duration: parseFloat(validatedBody.duration),
-          watched: parseFloat(validatedBody.watched),
-          watched_at: watchedAt,
-          completed: validatedBody.completed,
-          meta: validatedBody.meta,
-          updated_at: now,
+          tmdb_id_user_id_season_id_episode_id: {
+            tmdb_id: tmdbId,
+            user_id: userId,
+            season_id: validatedBody.seasonId || null,
+            episode_id: validatedBody.episodeId || null,
+          },
         },
       });
-    } else {
-      watchHistoryItem = await prisma.watch_history.create({
-        data: {
-          id: randomUUID(),
-          tmdb_id: tmdbId,
-          user_id: userId,
-          season_id: validatedBody.seasonId || null,
-          episode_id: validatedBody.episodeId || null,
-          season_number: validatedBody.seasonNumber || null,
-          episode_number: validatedBody.episodeNumber || null,
-          duration: parseFloat(validatedBody.duration),
-          watched: parseFloat(validatedBody.watched),
-          watched_at: watchedAt,
-          completed: validatedBody.completed,
-          meta: validatedBody.meta,
-          updated_at: now,
-        },
+
+      let watchHistoryItem;
+
+      const data = {
+        duration: parseFloat(validatedBody.duration),
+        watched: parseFloat(validatedBody.watched),
+        watched_at: watchedAt,
+        completed: validatedBody.completed,
+        meta: validatedBody.meta,
+        updated_at: now,
+      };
+
+      try {
+        if (existingItem) {
+          console.error('Updating existing watch history item');
+          watchHistoryItem = await prisma.watch_history.update({
+            where: {
+              id: existingItem.id,
+            },
+            data,
+          });
+        } else {
+          console.error('Creating new watch history item');
+          watchHistoryItem = await prisma.watch_history.create({
+            data: {
+              id: randomUUID(),
+              tmdb_id: tmdbId,
+              user_id: userId,
+              season_id: validatedBody.seasonId || null,
+              episode_id: validatedBody.episodeId || null,
+              season_number: validatedBody.seasonNumber || null,
+              episode_number: validatedBody.episodeNumber || null,
+              ...data,
+            },
+          });
+        }
+        console.error('Database operation successful');
+
+        return {
+          success: true,
+          id: watchHistoryItem.id,
+          tmdbId: watchHistoryItem.tmdb_id,
+          userId: watchHistoryItem.user_id,
+          seasonId: watchHistoryItem.season_id,
+          episodeId: watchHistoryItem.episode_id,
+          seasonNumber: watchHistoryItem.season_number,
+          episodeNumber: watchHistoryItem.episode_number,
+          meta: watchHistoryItem.meta,
+          duration: watchHistoryItem.duration,
+          watched: watchHistoryItem.watched,
+          watchedAt: watchHistoryItem.watched_at.toISOString(),
+          completed: watchHistoryItem.completed,
+          updatedAt: watchHistoryItem.updated_at.toISOString(),
+        };
+      } catch (dbError) {
+        console.error('Database error:', dbError);
+        throw createError({
+          statusCode: 500,
+          message: `Database error: ${dbError.message}`,
+        });
+      }
+    } catch (error) {
+      console.error('Error in watch history PUT:', error);
+      if (error.statusCode) {
+        throw error; // Re-throw createError instances
+      }
+      throw createError({
+        statusCode: 500,
+        message: 'Failed to save watch history',
       });
     }
-
-    return {
-      success: true,
-      id: watchHistoryItem.id,
-      tmdbId: watchHistoryItem.tmdb_id,
-      userId: watchHistoryItem.user_id,
-      seasonId: watchHistoryItem.season_id,
-      episodeId: watchHistoryItem.episode_id,
-      seasonNumber: watchHistoryItem.season_number,
-      episodeNumber: watchHistoryItem.episode_number,
-      meta: watchHistoryItem.meta,
-      duration: watchHistoryItem.duration,
-      watched: watchHistoryItem.watched,
-      watchedAt: watchHistoryItem.watched_at.toISOString(),
-      completed: watchHistoryItem.completed,
-      updatedAt: watchHistoryItem.updated_at.toISOString(),
-    };
   }
 
   if (method === 'DELETE') {

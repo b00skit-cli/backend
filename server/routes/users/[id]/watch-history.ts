@@ -57,22 +57,20 @@ export default defineEventHandler(async event => {
     });
 
     return items.map(item => ({
-      id: item.id,
       tmdbId: item.tmdb_id,
       episode: {
-        id: item.episode_id || null,
-        number: item.episode_number || null,
+        id: item.episode_id || undefined,
+        number: item.episode_number || undefined,
       },
       season: {
-        id: item.season_id || null,
-        number: item.season_number || null,
+        id: item.season_id || undefined,
+        number: item.season_number || undefined,
       },
       meta: item.meta,
       duration: item.duration.toString(),
       watched: item.watched.toString(),
       watchedAt: item.watched_at.toISOString(),
       completed: item.completed,
-      updatedAt: item.updated_at.toISOString(),
     }));
   }
 

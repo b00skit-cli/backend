@@ -148,8 +148,8 @@ model watch_history {
   season_id      String?  @db.VarChar(255)
   episode_id     String?  @db.VarChar(255)
   meta           Json
-  duration       BigInt
-  watched        BigInt
+  duration       Float
+  watched        Float
   watched_at     DateTime @db.Timestamptz(0)
   completed      Boolean  @default(false)
   season_number  Int?

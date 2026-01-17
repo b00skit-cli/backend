@@ -137,6 +137,12 @@ export default defineEventHandler(async event => {
         };
       } catch (dbError) {
         console.error('Database error:', dbError);
+        console.error('Database error details:', {
+          message: dbError.message,
+          code: dbError.code,
+          meta: dbError.meta,
+          name: dbError.constructor.name
+        });
         throw createError({
           statusCode: 500,
           message: `Database error: ${dbError.message}`,

@@ -54,30 +54,23 @@ export default defineEventHandler(async event => {
   if (method === 'PUT') {
     try {
       const body = await readBody(event);
-      console.error('Watch history PUT body:', JSON.stringify(body, null, 2));
 
-      let validatedBody;
-      try {
-        validatedBody = watchHistoryItemSchema.parse(body);
-        console.error('Validation successful');
-      } catch (validationError) {
-        console.error('Validation error:', validationError);
-        throw createError({
-          statusCode: 400,
-          message: `Validation error: ${validationError.message}`,
-        });
-      }
+      const validatedBody = watchHistoryItemSchema.parse(body);
 
       const watchedAt = defaultAndCoerceDateTime(validatedBody.watchedAt);
       const now = new Date();
+
+      // Normalize IDs for movies (use '\n' instead of null to satisfy unique constraint)
+      const normSeasonId = validatedBody.meta.type === 'movie' ? '\n' : validatedBody.seasonId || null;
+      const normEpisodeId = validatedBody.meta.type === 'movie' ? '\n' : validatedBody.episodeId || null;
 
       const existingItem = await prisma.watch_history.findUnique({
         where: {
           tmdb_id_user_id_season_id_episode_id: {
             tmdb_id: tmdbId,
             user_id: userId,
-            season_id: validatedBody.seasonId || null,
-            episode_id: validatedBody.episodeId || null,
+            season_id: normSeasonId,
+            episode_id: normEpisodeId,
           },
         },
       });
@@ -93,31 +86,27 @@ export default defineEventHandler(async event => {
         updated_at: now,
       };
 
-      try {
-        if (existingItem) {
-          console.error('Updating existing watch history item');
-          watchHistoryItem = await prisma.watch_history.update({
-            where: {
-              id: existingItem.id,
-            },
-            data,
-          });
-        } else {
-          console.error('Creating new watch history item');
-          watchHistoryItem = await prisma.watch_history.create({
-            data: {
-              id: randomUUID(),
-              tmdb_id: tmdbId,
-              user_id: userId,
-              season_id: validatedBody.seasonId || null,
-              episode_id: validatedBody.episodeId || null,
-              season_number: validatedBody.seasonNumber || null,
-              episode_number: validatedBody.episodeNumber || null,
-              ...data,
-            },
-          });
-        }
-        console.error('Database operation successful');
+      if (existingItem) {
+        watchHistoryItem = await prisma.watch_history.update({
+          where: {
+            id: existingItem.id,
+          },
+          data,
+        });
+      } else {
+        watchHistoryItem = await prisma.watch_history.create({
+          data: {
+            id: randomUUID(),
+            tmdb_id: tmdbId,
+            user_id: userId,
+            season_id: normSeasonId,
+            episode_id: normEpisodeId,
+            season_number: validatedBody.seasonNumber || null,
+            episode_number: validatedBody.episodeNumber || null,
+            ...data,
+          },
+        });
+      }
 
         return {
           success: true,
@@ -137,27 +126,11 @@ export default defineEventHandler(async event => {
         };
       } catch (dbError) {
         console.error('Database error:', dbError);
-        console.error('Database error details:', {
-          message: dbError.message,
-          code: dbError.code,
-          meta: dbError.meta,
-          name: dbError.constructor.name
-        });
         throw createError({
           statusCode: 500,
-          message: `Database error: ${dbError.message}`,
+          message: 'Failed to save watch history',
         });
       }
-    } catch (error) {
-      console.error('Error in watch history PUT:', error);
-      if (error.statusCode) {
-        throw error; // Re-throw createError instances
-      }
-      throw createError({
-        statusCode: 500,
-        message: 'Failed to save watch history',
-      });
-    }
   }
 
   if (method === 'DELETE') {

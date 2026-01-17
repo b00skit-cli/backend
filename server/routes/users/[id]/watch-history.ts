@@ -59,11 +59,11 @@ export default defineEventHandler(async event => {
     return items.map(item => ({
       tmdbId: item.tmdb_id,
       episode: {
-        id: item.episode_id || undefined,
+        id: item.episode_id === '\n' ? undefined : item.episode_id || undefined,
         number: item.episode_number || undefined,
       },
       season: {
-        id: item.season_id || undefined,
+        id: item.season_id === '\n' ? undefined : item.season_id || undefined,
         number: item.season_number || undefined,
       },
       meta: item.meta,
